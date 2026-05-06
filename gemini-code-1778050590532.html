@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>의사결정유형 TEST</title>
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --bg-color: #f5f7fa;
+        }
+        body { font-family: 'Apple SD Gothic Neo', sans-serif; background-color: var(--bg-color); margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 500px; margin: 0 auto; background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        h1 { font-size: 24px; text-align: center; color: var(--primary-color); margin-bottom: 30px; }
+        .progress-bar { height: 6px; background: #eee; border-radius: 3px; margin-bottom: 20px; }
+        #progress { height: 100%; background: var(--primary-color); width: 0%; border-radius: 3px; transition: 0.3s; }
+        .question-box { margin-bottom: 25px; }
+        .question-text { font-size: 18px; font-weight: bold; line-height: 1.5; margin-bottom: 20px; min-height: 60px; }
+        .btn-group { display: grid; gap: 10px; }
+        button { padding: 15px; font-size: 16px; border: none; border-radius: 12px; cursor: pointer; transition: 0.2s; }
+        .btn-yes { background-color: var(--primary-color); color: white; }
+        .btn-no { background-color: #e2e8f0; color: #4a5568; }
+        button:active { transform: scale(0.98); }
+        #result { display: none; text-align: center; }
+        .result-score { font-size: 20px; margin: 20px 0; text-align: left; background: #f8fafc; padding: 15px; border-radius: 10px; }
+        .top-type { font-size: 28px; font-weight: bold; color: var(--primary-color); margin: 10px 0; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="test-screen">
+        <h1 id="title">의사결정유형 검사</h1>
+        <div class="progress-bar"><div id="progress"></div></div>
+        <div class="question-box">
+            <div id="q-number" style="color: #888; font-size: 14px; margin-bottom: 5px;"></div>
+            <div id="q-text" class="question-text"></div>
+        </div>
+        <div class="btn-group">
+            <button class="btn-yes" onclick="answer(1)">그렇다</button>
+            <button class="btn-no" onclick="answer(0)">아니다</button>
+        </div>
+    </div>
+
+    <div id="result">
+        <h1>검사 결과</h1>
+        <div id="result-content"></div>
+        <button onclick="location.reload()" style="margin-top:20px; width:100%; background:#333; color:white;">다시 테스트하기</button>
+    </div>
+</div>
+
+<script>
+    // 이미지의 데이터를 기반으로 구성된 문항
+    const questions = [
+        { q: "나는 중요한 의사결정을 할 때 한 단계씩 체계적으로 한다.", type: "합리적" },
+        { q: "나는 내 자신의 욕구에 따라 매우 독특하게 의사결정을 한다.", type: "직관적" },
+        { q: "나는 얻을 수 있는 모든 정보를 수집하지 않고는 중요한 의사결정은 거의 하지 않는다.", type: "합리적" },
+        { q: "의사결정을 할 때 내 친구들이 나의 결정을 어떻게 생각할지가 매우 중요하다.", type: "의존적" },
+        { q: "나는 의사결정을 할 때, 이 의사결정과 관련된 결과까지 고려한다.", type: "합리적" },
+        { q: "나는 다른 사람의 도움 없이는 중요한 의사결정을 하기 힘들다.", type: "의존적" },
+        { q: "나는 어려운 문제에 부딪히면 재빨리 결정을 내린다.", type: "직관적" },
+        { q: "나는 의사결정을 할 때, 내 자신의 즉각적인 느낌이나 감정에 따른다.", type: "직관적" },
+        { q: "나는 내가 하고 싶은 것보다 다른 사람이 어떻게 생각하느냐에 영향을 받아 의사결정을 한다.", type: "의존적" },
+        { q: "어떤 의사결정을 할 때 나는 시간을 갖고 주의 깊게 생각해본다.", type: "합리적" },
+        { q: "나는 문제의 본질에 대해 찰나적으로 떠오르는 생각에 의해 결정을 한다.", type: "직관적" },
+        { q: "나는 친한 친구에게 먼저 이야기하지 않고는 의사결정을 거의 하지 않는다.", type: "의존적" },
+        { q: "나는 중대한 의사결정 문제가 예상될 때, 그것을 계획하고 생각할 시간을 충분히 갖는다.", type: "합리적" },
+        { q: "나는 의사결정을 못한 채 뒤로 미루는 경우가 많다.", type: "의존적" },
+        { q: "의사결정하기 전에 올바른 사실을 알고 있나 확인하기 위해 관련 정보들을 다시 살펴본다.", type: "합리적" },
+        { q: "의사결정에 관해 실제적으로 생각하지는 않지만 갑자기 생각이 떠오르면서 무엇을 해야 할지 알게 된다.", type: "직관적" },
+        { q: "어떤 중요한 일을 하기 전에 나는 신중하게 계획을 세운다.", type: "합리적" },
+        { q: "의사결정을 할 때 나는 다른 사람의 많은 격려와 지지를 필요로 한다.", type: "의존적" },
+        { q: "나는 의사결정을 할 때, 마음이 가장 끌리는 쪽으로 결정을 한다.", type: "직관적" },
+        { q: "나의 인기를 떨어뜨릴 의사결정은 별로 하고 싶지 않다.", type: "의존적" },
+        { q: "나는 의사결정을 할 때, 예감 또는 육감을 중요시한다.", type: "직관적" },
+        { q: "나는 조급하게 결정을 내리지 않는데, 그 이유는 올바른 의사결정임을 확신하고 싶기 때문이다.", type: "합리적" },
+        { q: "어떤 의사결정이 감정적으로 나에게 만족스러우면 나는 그 결정을 올바른 것으로 본다.", type: "직관적" },
+        { q: "올바른 의사결정을 할 수 있는 능력에 자신이 없기 때문에 주로 다른 사람의 의견에 따른다.", type: "의존적" },
+        { q: "종종 내가 내린 각각의 의사결정을 일정한 목표를 향한 진보의 단계들로 본다.", type: "합리적" },
+        { q: "내가 내리는 의사결정을 친구들이 지지해주지 않으면 그 결정에 대해 확신을 갖지 못한다.", type: "의존적" },
+        { q: "의사결정을 하기 전에, 나는 그 결정을 함으로써 생기는 결과에 대해 가능한 한 많이 알고 싶다.", type: "합리적" },
+        { q: "나는 '이것이다'라는 느낌에 의해 결정을 내릴 때가 종종 있다.", type: "직관적" },
+        { q: "대개의 경우 나는 주위 사람들이 바라는 방향으로 의사결정을 한다.", type: "의존적" },
+        { q: "여러 가지 정보를 수집하거나 검토하는 과정을 갖기보다, 떠오르는 생각대로 결정을 내리는 경우가 자주 있다.", type: "직관적" }
+    ];
+
+    let currentIdx = 0;
+    let scores = { "합리적": 0, "직관적": 0, "의존적": 0 };
+
+    function updateQuestion() {
+        if(currentIdx < questions.length) {
+            document.getElementById('q-number').innerText = `문항 ${currentIdx + 1} / ${questions.length}`;
+            document.getElementById('q-text').innerText = questions[currentIdx].q;
+            document.getElementById('progress').style.width = `${((currentIdx) / questions.length) * 100}%`;
+        } else {
+            showResult();
+        }
+    }
+
+    function answer(val) {
+        const type = questions[currentIdx].type;
+        scores[type] += val;
+        currentIdx++;
+        updateQuestion();
+    }
+
+    function showResult() {
+        document.getElementById('test-screen').style.display = 'none';
+        document.getElementById('result').style.display = 'block';
+
+        let sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+        const topType = sorted[0][0];
+
+        let html = `<p>당신의 가장 주된 의사결정 유형은</p>`;
+        html += `<div class="top-type">${topType}형</div>`;
+        html += `<div class="result-score">`;
+        html += `📊 <b>유형별 점수</b><br>`;
+        html += `• 합리적 유형: ${scores['합리적']}점 / 10점<br>`;
+        html += `• 직관적 유형: ${scores['직관적']}점 / 10점<br>`;
+        html += `• 의존적 유형: ${scores['의존적']}점 / 10점`;
+        html += `</div>`;
+        
+        document.getElementById('result-content').innerHTML = html;
+    }
+
+    updateQuestion();
+</script>
+</body>
+</html>
